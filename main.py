@@ -3,14 +3,28 @@ import PIL
 from PIL import Image
 import numpy as np
 import os
-
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 from matplotlib import pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from sklearn.neural_network import MLPClassifier
+
+
+categories = {
+    "Shetland_sheepdog": 0,
+    "Papillon": 1,
+    "Bernese_mountain_dog": 2,
+    "Border_collie": 3,
+    "Chow_chow": 4,
+    "Pomeranian": 5,
+    "Pug": 6,
+    "Saluki": 7,
+    "Samoyed": 8,
+    "Siberian_husky": 9,
+    "Other": 10
+}
 
 def augment_data(dataset):
     generated_dataset = []
@@ -120,15 +134,18 @@ x_validate_norm = normalize(x_validate_set)
 
 model = Sequential([
   Rescaling(1./255, input_shape=(256, 256, 3)),
-  layers.Conv2D(16, 3, padding='same', activation='relu'),
-  layers.MaxPooling2D(),
   layers.Conv2D(32, 3, padding='same', activation='relu'),
   layers.MaxPooling2D(),
   layers.Conv2D(64, 3, padding='same', activation='relu'),
   layers.MaxPooling2D(),
+  layers.Conv2D(128, 3, padding='same', activation='relu'),
+  layers.MaxPooling2D(),
   layers.Flatten(),
-  layers.Dense(128, activation='relu'),
-  layers.Dense(11)
+  layers.Dense(1024, activation='relu'),
+  layers.Dropout(0.5),
+  layers.Dense(1024, activation='relu'),
+  layers.Dropout(0.5),
+  layers.Dense(11, activation='softmax')
 ])
 
 model.compile(optimizer='adam',
@@ -141,41 +158,42 @@ epochs=10
 history = model.fit(
   x=x_train_set,
   y=y_train_set,
+  validation_data=(x_test_set, y_test_set),
   epochs=epochs
 )
 model.summary()
 
 acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+
 loss = history.history['loss']
+val_loss = history.history['val_loss']
 
 epochs_range = range(epochs)
 
 plt.figure(figsize=(8, 8))
 plt.subplot(1, 2, 1)
 plt.plot(epochs_range, acc, label='Training Accuracy')
+plt.plot(epochs_range, val_acc, label='Validation Accuracy')
 plt.legend(loc='lower right')
 plt.title('Training Accuracy')
 
 plt.subplot(1, 2, 2)
 plt.plot(epochs_range, loss, label='Training Loss')
+plt.plot(epochs_range, val_loss, label='Validation Loss')
 plt.legend(loc='upper right')
 plt.title('Training Loss')
 plt.show()
 
-# mlp = MLPClassifier(verbose=0, random_state=0, max_iter=30, solver='sgd',
-#                     learning_rate='constant', momentum=0, learning_rate_init=0.2)
-# mlp = MLPClassifier(verbose=0, random_state=0, max_iter=30, solver='adam',
-#                     learning_rate='invscaling', momentum=0, learning_rate_init=0.2)
-# mlp = MLPClassifier(verbose=0, random_state=0, max_iter=30, solver='adam',
-#                     learning_rate_init=0.01)
-# nsamples, nx, ny, nz = x_train_set.shape
-# x_train_set_reshaped = x_train_set.reshape((nsamples, nx*ny*nz))
-# mlp.fit(x_train_set_reshaped, y_train_set)
-# x_elem = np.array(x_train_set[0:1])
-# shape, nx_t, ny_t, nz_t = x_elem.shape
-# x_elem_reshaped = x_elem.reshape((1, nx_t*ny_t*nz_t))
-# result = mlp.predict(x_train_set_reshaped)
-# print(result)
-# print(y_train_set[0])
-# plt.plot(mlp.loss_curve_)
-# plt.show()
+
+predictions = model.predict(x_test_set[0:10])
+
+for i in range(10):
+    score = tf.nn.softmax(predictions[i])
+    Image.fromarray(x_test_set[i]).show()
+    print(score)
+    print(list(categories.keys())[y_test_set[i]])
+    print(
+        "This image most likely belongs to {} with a {:.2f} percent confidence."
+        .format(list(categories.keys())[list(categories.values()).index(np.argmax(score))], 100 * np.max(score))
+    )
