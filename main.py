@@ -5,9 +5,6 @@ import numpy as np
 import os
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 from matplotlib import pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import gc
@@ -34,7 +31,7 @@ def augment_data(dataset):
     generated_dataset = []
     for i in range(len(dataset)):
         gen = datagen.flow(np.stack(np.array(dataset)[i:i + 1, 0]), np.stack(np.array(dataset)[i:i + 1, 1]), batch_size=1)
-        for j in range(4):
+        for j in range(16):
             generated_image = gen.next()[0][0]
             generated_dataset.append(np.array([generated_image, dataset[i][1]]))
     return generated_dataset
@@ -58,7 +55,7 @@ def create_datagen_basic():
     return datagen
 
 def standardize(image):
-    size = (256, 256)
+    size = (128, 128)
     ret = image.resize(size)
     return ret
 
@@ -120,8 +117,9 @@ def load_dataset(path):
 
 
 dataset = load_dataset("dogs")
+other = load_other("dogs", 16*194)
 data_aug = augment_data(dataset)
-
+data_aug.extend(other)
 
 x_train_set, x_test_set, x_validate_set, y_train_set, y_test_set, y_validate_set = split_data(data_aug)
 
@@ -132,10 +130,10 @@ x_train_norm = normalize(x_train_set)
 x_test_norm = normalize(x_test_set)
 x_validate_norm = normalize(x_validate_set)
 
+x_train_norm = np.append(x_train_norm, x_test_norm, 0)
+y_train_set = np.append(y_train_set, y_test_set, 0)
 
-#x_train_norm.extend(x_validate_norm)
-#list(y_train_set).extend(y_validate_set)
-
+# MODEL 1
 model1 = keras.models.Sequential([
     keras.layers.Conv2D(filters=96, kernel_size=(11,11), strides=(4,4), activation='relu'),
     keras.layers.BatchNormalization(),
@@ -145,41 +143,67 @@ model1 = keras.models.Sequential([
     keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
     keras.layers.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
     keras.layers.BatchNormalization(),
-    keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
-    keras.layers.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
-    keras.layers.BatchNormalization(),
-    keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding="same"),
-    keras.layers.BatchNormalization(),
     keras.layers.Conv2D(filters=256, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
     keras.layers.BatchNormalization(),
     keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
     keras.layers.Flatten(),
     keras.layers.Dense(4096, activation='relu'),
-    keras.layers.Dropout(0.3),
     keras.layers.Dense(4096, activation='relu'),
-    keras.layers.Dropout(0.3),
-    keras.layers.Dense(4096, activation='relu'),
-    keras.layers.Dropout(0.3),
-    keras.layers.Dense(4096, activation='relu'),
-    keras.layers.Dropout(0.1),
-    keras.layers.Dense(11, activation='sigmoid')
+    keras.layers.Dense(11, activation='softmax')
 ])
 
-# model1 = Sequential([
-#   #Rescaling(1./255, input_shape=(256, 256, 3)),
-#   layers.Conv2D(32, 3, padding='same', activation='relu'),
-#   layers.MaxPooling2D(),
-#   layers.Conv2D(64, 3, padding='same', activation='relu'),
-#   layers.MaxPooling2D(),
-#   layers.Conv2D(128, 3, padding='same', activation='relu'),
-#   layers.MaxPooling2D(),
-#   layers.Flatten(),
-#   layers.Dense(512, activation='relu'),
-#   layers.Dropout(0.5),
-#   layers.Dense(512, activation='relu'),
-#   layers.Dropout(0.5),
-#   layers.Dense(11, activation='softmax')
+
+# MODEL 2
+# model1 = keras.models.Sequential([
+#     keras.layers.Conv2D(filters=96, kernel_size=(11,11), strides=(4,4), activation='relu'),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.MaxPool2D(pool_size=(2,2), strides=(2,2)),
+#     keras.layers.Conv2D(filters=256, kernel_size=(5,5), strides=(1,1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.MaxPool2D(pool_size=(2,2), strides=(2,2)),
+#     keras.layers.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.Conv2D(filters=1024, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.MaxPool2D(pool_size=(2, 2), strides=(2, 2)),
+#     keras.layers.Conv2D(filters=256, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.MaxPool2D(pool_size=(2,2), strides=(2,2)),
+#     keras.layers.Flatten(),
+#     keras.layers.Dense(4096, activation='relu'),
+#     keras.layers.Dropout(0.3),
+#     keras.layers.Dense(4096, activation='relu'),
+#     keras.layers.Dropout(0.3),
+#     keras.layers.Dense(11, activation='softmax')
 # ])
+
+# MODEL 3
+# model1 = keras.models.Sequential([
+#     keras.layers.Conv2D(filters=96, kernel_size=(11,11), strides=(4,4), activation='relu'),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
+#     keras.layers.Conv2D(filters=256, kernel_size=(5,5), strides=(1,1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
+#     keras.layers.Conv2D(filters=384, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.Conv2D(filters=256, kernel_size=(3,3), strides=(1,1), activation='relu', padding="same"),
+#     keras.layers.BatchNormalization(),
+#     keras.layers.MaxPool2D(pool_size=(3,3), strides=(2,2)),
+#     keras.layers.Flatten(),
+#     keras.layers.Dense(4096, activation='relu'),
+#     keras.layers.Dropout(0.3),
+#     keras.layers.Dense(4096, activation='relu'),
+#     keras.layers.Dropout(0.3),
+#     keras.layers.Dense(4096, activation='relu'),
+#     keras.layers.Dropout(0.3),
+#     keras.layers.Dense(4096, activation='relu'),
+#     keras.layers.Dropout(0.1),
+#     keras.layers.Dense(11, activation='softmax')
+# ])
+
 
 model1.compile(optimizer='adam',
               loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -187,7 +211,7 @@ model1.compile(optimizer='adam',
 
 print(x_train_set.shape)
 print(y_train_set.shape)
-epochs=40
+epochs=50
 del x_train_set
 del x_validate_set
 del x_test_set
@@ -228,14 +252,14 @@ del x_train_norm
 del y_train_set
 gc.collect()
 
-predictions = model1.predict(x_test_norm[0:10])
-
-for i in range(10):
-    score = tf.nn.softmax(predictions[i])
-    Image.fromarray(x_test_norm[i]).show()
-    print(score)
-    print(list(categories.keys())[y_test_set[i]])
-    print(
-        "This image most likely belongs to {} with a {:.2f} percent confidence."
-        .format(list(categories.keys())[list(categories.values()).index(np.argmax(score))], 100 * np.max(score))
-    )
+# predictions = model1.predict(x_test_norm[0:10])
+#
+# for i in range(10):
+#     score = tf.nn.softmax(predictions[i])
+#     Image.fromarray(np.array(np.array(x_test_norm[i])*255, 'int')).show()
+#     print(score)
+#     print(list(categories.keys())[y_test_set[i]])
+#     print(
+#         "This image most likely belongs to {} with a {:.2f} percent confidence."
+#         .format(list(categories.keys())[list(categories.values()).index(np.argmax(score))], 100 * np.max(score))
+#     )
