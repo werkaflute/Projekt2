@@ -28,7 +28,9 @@ categories = {
     "Other": 10
 }
 
+
 def augment_data(dataset):
+    datagen = create_datagen_basic()
     generated_dataset = []
     for i in range(len(dataset)):
         gen = datagen.flow(np.stack(np.array(dataset)[i:i + 1, 0]), np.stack(np.array(dataset)[i:i + 1, 1]), batch_size=1)
@@ -37,18 +39,20 @@ def augment_data(dataset):
             generated_dataset.append(np.array([generated_image, dataset[i][1]]))
     return generated_dataset
 
+
 def create_datagen_basic():
-    shift = 0.05
+    shift = 0.15
 
     datagen = ImageDataGenerator(
         featurewise_center=False,
         featurewise_std_normalization=False,
-        rotation_range=4,
+        rotation_range=20,
         width_shift_range=shift,
         height_shift_range=shift,
         horizontal_flip=True,
         zca_whitening=False,
-        fill_mode='reflect'
+        fill_mode='reflect',
+        brightness_range=(0.6, 1.4)
     )
 
     return datagen
@@ -61,11 +65,7 @@ def standardize(image):
 
 def normalize(dataset):
     dataset_np = np.array(dataset)
-    images = np.array(dataset_np[:, 0])
-    images = images / 255
-    normalized_dataset = []
-    for i in range(len(dataset)):
-        normalized_dataset.append([images[i], dataset[i][1]])
+    normalized_dataset = dataset_np / 255
     return normalized_dataset
 
 
