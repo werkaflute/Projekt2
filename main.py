@@ -162,7 +162,7 @@ model1 = keras.models.Sequential([
     keras.layers.Dropout(0.3),
     keras.layers.Dense(4096, activation='relu'),
     keras.layers.Dropout(0.1),
-    keras.layers.Dense(11, activation='softmax')
+    keras.layers.Dense(11, activation='sigmoid')
 ])
 
 # model1 = Sequential([
@@ -224,12 +224,15 @@ plt.legend(loc='upper right')
 plt.title('Training Loss')
 plt.show()
 
+del x_train_norm
+del y_train_set
+gc.collect()
 
-predictions = model1.predict(x_test_set[0:10])
+predictions = model1.predict(x_test_norm[0:10])
 
 for i in range(10):
     score = tf.nn.softmax(predictions[i])
-    Image.fromarray(x_test_set[i]).show()
+    Image.fromarray(x_test_norm[i]).show()
     print(score)
     print(list(categories.keys())[y_test_set[i]])
     print(
