@@ -162,7 +162,7 @@ model1 = keras.models.Sequential([
     keras.layers.Dropout(0.3),
     keras.layers.Dense(4096, activation='relu'),
     keras.layers.Dropout(0.1),
-    keras.layers.Dense(11, activation='sigmoid')
+    keras.layers.Dense(11, activation='softmax')
 ])
 
 # model1 = Sequential([
