@@ -109,12 +109,40 @@ def load_dataset(path):
     }
     i = 0
     for directory in os.listdir(path):
-        for image_path in os.listdir(path + "/" + directory):
-            img = np.array(standardize((PIL.Image.open(path + "/" + directory + "/" + image_path)).convert('RGB')), 'ubyte')
-            dataset.append(np.array([img, categories[directory]]))
-        i += 1
+        if directory != "Other":
+            for image_path in os.listdir(path + "/" + directory):
+                img = np.array(standardize((PIL.Image.open(path + "/" + directory + "/" + image_path)).convert('RGB')), 'ubyte')
+                dataset.append(np.array([img, categories[directory]]))
+            i += 1
     return dataset
 
+
+def load_other(path, number):
+    dataset = []
+    categories = {
+        "Shetland_sheepdog": 0,
+        "Papillon": 1,
+        "Bernese_mountain_dog": 2,
+        "Border_collie": 3,
+        "Chow_chow": 4,
+        "Pomeranian": 5,
+        "Pug": 6,
+        "Saluki": 7,
+        "Samoyed": 8,
+        "Siberian_husky": 9,
+        "Other": 10
+    }
+    i = 0
+    for directory in os.listdir(path):
+        if directory == "Other":
+            for image_path in os.listdir(path + "/" + directory):
+                img = np.array(standardize((PIL.Image.open(path + "/" + directory + "/" + image_path)).convert('RGB')),
+                               'ubyte')
+                dataset.append(np.array([img, categories[directory]]))
+            i += 1
+    random.shuffle(dataset)
+    dataset = dataset[0:number]
+    return dataset
 
 dataset = load_dataset("dogs")
 other = load_other("dogs", 16*194)
